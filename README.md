@@ -8,7 +8,7 @@ These instructions will tell you how to get all of the code up and running on yo
 
 ### Prerequisites
 
-You will need to have [pip]https://pip.pypa.io/en/stable/installing/ on your local machine, a command-line interface, a version of Python > 3.7 and an IDE that can run Python and .env. You will need to use MacOS for the current build.
+You will need to have [pip](https://pip.pypa.io/en/stable/installing/) on your local machine, a command-line interface, a version of Python > 3.7 and an IDE that can run Python and .env. You will need to use MacOS for the current build.
 
 ### Installing
 
