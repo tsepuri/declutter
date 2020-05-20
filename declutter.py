@@ -2,10 +2,11 @@ from watchdog.observers import Observer
 from watchdog.events import FileSystemEventHandler
 import zipfile
 import os
+from dotenv import load_dotenv
 import shutil
 import time
 from pathlib import Path
-
+load_dotenv()
 def initial_declutter():
     for file in mylistdir(current_folder):
         #assuming these files are unnecessary and extracted from 
@@ -93,8 +94,7 @@ def initial_declutter():
                                 right_similar.append(file_name)
                         rpointer+=1
                     bigger_similar =  left_similar if len(left_similar) > len(right_similar) else right_similar
-                    finding_final_word = lword if len(left_similar) > len(right_similar) else rword    
-                print(similar)            
+                    finding_final_word = lword if len(left_similar) > len(right_similar) else rword              
                 if len(final_word)> 3 or (len(final_word)>1 and final_word.isupper()):
                     if any(c.isalpha() for c in final_word):
                         if(os.path.exists(f"{current_folder}/{final_word}")):
@@ -219,7 +219,9 @@ class DownloadsHandler(FileSystemEventHandler):
     def on_modified(self, event):
         time.sleep(5)
         initial_declutter()
-        time.sleep(10)
+        time.sleep(5)
+        initial_declutter()
+        time.sleep(5)
         for src in all_files(current_folder):
             file = src[src.index(current_folder)+len(current_folder)+1:]
             new_location = new_folder + "/" + file
@@ -244,8 +246,8 @@ class DownloadsHandler(FileSystemEventHandler):
             self.last_modified = latest_file
             '''
 
-current_folder = "/Users/starkiller/Downloads copy"
-new_folder = "/Users/starkiller/new-downloads"
+current_folder = os.getenv("CURRENT_FOLDER")
+new_folder = os.getenv("NEW_FOLDER")
 initial_declutter()
 time.sleep(10)
 event_handler = DownloadsHandler()
