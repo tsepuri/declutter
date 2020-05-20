@@ -8,6 +8,8 @@ import time
 from pathlib import Path
 load_dotenv()
 def initial_declutter():
+    '''to sort through the files before transfering them
+    '''
     for file in mylistdir(current_folder):
         #assuming these files are unnecessary and extracted from 
         if ".dmg" in file or ".exe" in file or ".zip" in file or "Integration" in file:
@@ -33,17 +35,19 @@ def initial_declutter():
         else:
             duplicates = []
             for file_name in mylistdir(current_folder):
+                #the condition for a duplicate: it needs to contain the entire name of the original file and have the same file type
                 if file[:file.rfind(".")] in file_name and not_main(file_name) and file[file.rfind(".")+1:] in file_name:
                     duplicates.append(file_name)
                 elif file in file_name:
                     duplicates.append(file_name)
             if len(duplicates) > 1 and not "WhatsApp Image" in file:
                 duplicates.sort(key=before_dot)
-                #trying for an exception in case the duplicate is a folder and not a file
+                #checking for an exception in case the duplicate is a folder and not a file
                 try:
                     os.remove(f"{current_folder}/{file}")
                 except PermissionError:
                     shutil.rmtree(f"{current_folder}/{file}")
+                #using the newest version of the duplicates with the name of the oldest version
                 if duplicates[len(duplicates) - 1] != file:
                     os.rename(f"{current_folder}/{(duplicates)[len(duplicates) - 1]}", f"{current_folder}/{file}")
                 duplicates.pop(len(duplicates) - 1)
@@ -57,7 +61,7 @@ def initial_declutter():
                         
     #checking for similarities between different file names
     for file in mylistdir(current_folder):
-        
+        #splitting each file into its words and checking if any other files have the same word, and expanding into bigger strings by moving left and right for each word
         words = file.split()
         for i in range(len(words)):
             similar = []
@@ -65,6 +69,7 @@ def initial_declutter():
             for file_name in mylistdir(current_folder):
                 if words[i] in file_name and not_main(file_name):   
                     similar.append(file_name)
+                #skipping forward if no similar file names were found
                 if len(similar) < 2:
                     continue
                 bigger_similar = similar
@@ -76,17 +81,20 @@ def initial_declutter():
                 rword = words[i]
                 final_word = words[i]
                 finding_final_word = words[i]
+                #increasing size of similarity string only when it is at least half of the previous similarity string
                 while len(bigger_similar) > 0.5 * len(similar) and (lpointer > 0 or rpointer < (len(words) - 1)):
                     similar = bigger_similar
                     final_word = finding_final_word
                     left_similar = []
                     right_similar = []
+                    #checking if the string can be increased on the left
                     if lpointer > 0:
                         lword = words[lpointer - 1] + " "+lword
                         for file_name in mylistdir(current_folder):
                             if lword in file_name and not_main(file_name):  
                                 left_similar.append(file_name)
                         lpointer-=1
+                    #checking if the string can be increased on the right
                     if rpointer < (len(words) - 1):
                         rword = rword + " "+words[rpointer + 1]
                         for file_name in mylistdir(current_folder):
@@ -96,6 +104,7 @@ def initial_declutter():
                     bigger_similar =  left_similar if len(left_similar) > len(right_similar) else right_similar
                     finding_final_word = lword if len(left_similar) > len(right_similar) else rword              
                 if len(final_word)> 3 or (len(final_word)>1 and final_word.isupper()):
+                    #making sure the final similar string is not a number
                     if any(c.isalpha() for c in final_word):
                         if(os.path.exists(f"{current_folder}/{final_word}")):
                             final_word = final_word + " ALL"
@@ -109,14 +118,17 @@ def initial_declutter():
                 break
     for file in mylistdir(current_folder):
         if not_main(file):
+            #grouping all the tibetan files since I work extensively in the area
             if "tibet" in file.lower() or "goldstein" in file.lower():
                 Path(f"{current_folder}/Tibet_Files").mkdir(parents=True, exist_ok=True)
                 os.rename(f"{current_folder}/{file}", f"{current_folder}/Tibet_Files/{file}")
             else:
+                #grouping all the career related files
                 if "resume" in file.lower() or "coverletter" in file.lower() or "cover_letter" in file.lower() or "internship" in file.lower():
                     Path(f"{current_folder}/Career").mkdir(parents=True, exist_ok=True)
                     os.rename(f"{current_folder}/{file}", f"{current_folder}/Career/{file}")
                 else:
+                    #grouping all college related files according to a list of college keywords
                     college_stuff = ["exam", "assignment", "project", "worksheet", "midterm", "cwru", "SI ", "hw", "class", "engineering", "homework", "eecs", "phys", "sages", "essay", "syllabus", " math", "lab"]
                     for index in college_stuff:
                         if index in file.lower():
@@ -130,20 +142,29 @@ def initial_declutter():
                             break
 
     for file in mylistdir(current_folder):
+        #for all folders except the main subfolders
         if os.path.isdir(current_folder+"/"+file) and not_main(file):      
             file_types_dic = {}
+            #mapping the main subfolder of each of the files in the folder
             for i in all_files(current_folder+"/"+file):
                 final_type = type_of(i[i.rfind("."):])
                 section = final_type[:final_type.index("/")]
                 file_types_dic[section] = file_types_dic.get(section, 0) + 1
+            #placing the folder into the main subfolder that most of its files belong in
             if len(file_types_dic) > 0:
                 file_type = keywithmaxval(file_types_dic)
                 if not os.path.exists(current_folder+"/"+file_type):
                     Path(current_folder+"/"+file_type).mkdir(parents=True, exist_ok=True)
-                os.rename(f"{current_folder}/{file}", f"{current_folder}/{file_type}/{file}")            
+                os.rename(f"{current_folder}/{file}", f"{current_folder}/{file_type}/{file}")   
+            else:
+                if not os.path.exists(current_folder+"/Unknown"):
+                    Path(current_folder+"/Unknown").mkdir(parents=True, exist_ok=True)
+                os.rename(f"{current_folder}/{file}", f"{current_folder}/Unknown/{file}")      
         elif not_main(file):
+            #placing the folder into the subfolder based on its type
             file_type = file[file.rfind("."):]
             folder_name = type_of(file_type)
+            #creating the nested directory safely if it does not exist
             if not os.path.exists(current_folder+"/"+folder_name[:folder_name.rfind("/")]):
                 Path(current_folder+"/"+folder_name[:folder_name.rfind("/")]).mkdir(parents=True, exist_ok=True)
             os.rename(f"{current_folder}/{file}", f"{current_folder}/{folder_name}{file}")
@@ -157,10 +178,15 @@ def mylistdir(directory):
             if not (x.startswith('.'))]
 
 def not_main(file):
+    '''Used to ignore all of the main subfolders'''
     return file != "Media" and file != "Unknown" and file != "Programming" and file != "Docs"
+
 def before_dot(e):
+    '''Returns the file name without its type usually'''
     return e[:e.rfind(".")]     
 def type_of(file_type):
+    '''Finds the directory for a file based on the file type
+    '''
     if file_type == ".jpg" or file_type == ".jpeg" or file_type == ".png":
         folder_type = "Media/Pictures/"
     elif file_type == ".java" or file_type == ".class":
@@ -201,6 +227,8 @@ def type_of(file_type):
     return folder_type
 
 def all_files(path):
+    '''Returns all of the files in all subdirectories
+        in a directory'''
     filelist = []
     for root, dirs, files in os.walk(path):
 	    for file in files:
@@ -208,6 +236,7 @@ def all_files(path):
     return filelist  
 
 def keywithmaxval(d):
+    '''Returns the key with the maximum value in a dictionary'''
     v = list(d.values())
     k = list(d.keys())
     return k[v.index(max(v))]      
@@ -217,6 +246,7 @@ class DownloadsHandler(FileSystemEventHandler):
     last_modified = ""
         
     def on_modified(self, event):
+        #Alternate sleeping to prevent the files from transfering before being sorted
         time.sleep(5)
         initial_declutter()
         time.sleep(5)
@@ -227,6 +257,7 @@ class DownloadsHandler(FileSystemEventHandler):
             new_location = new_folder + "/" + file
             if not os.path.exists(new_location[:new_location.rfind("/")]):
                  Path(new_location[:new_location.rfind("/")]).mkdir(parents=True, exist_ok=True)
+            #extracting any zip files
             if file.endswith(".zip"):
                 new_location = new_location[:new_location.index(".zip")]
                 with zipfile.ZipFile(src,"r") as zip_ref:
@@ -234,9 +265,11 @@ class DownloadsHandler(FileSystemEventHandler):
                 os.remove(src)
             else:
                 os.rename(src, new_location)
+                #Allowing a 100 seconds for the file to be extracted before deleting it
                 if file.endswith(".dmg"):
                     time.sleep(100)
                     os.remove(new_location)
+        #removing all of the empty subfolders from the original folder
         for folders in mylistdir(current_folder):
             shutil.rmtree(f"{current_folder}/{folders}")
             '''
